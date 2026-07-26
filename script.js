@@ -1,10 +1,17 @@
 // ==========================================
 // 1. הגדרות Supabase
+// (ודא שהמפתחות כאן תואמים לפרויקט ה-Supabase שלך!)
 // ==========================================
 const SUPABASE_URL = 'https://hmafronrwuxjizfkhxju.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_lTp_YIawnPvil699Ikc_Sw_5KnnJZPp';
 
-const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// יצירת חיבור בטוח
+let supabaseClient = null;
+if (typeof supabase !== 'undefined') {
+    supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+} else {
+    console.error('Supabase library is not loaded properly.');
+}
 
 // ==========================================
 // 2. טיימר ספירה לאחור (06/01/2027 בשעה 19:30)
@@ -39,12 +46,11 @@ function updateCountdown() {
     if (secondsEl) secondsEl.innerText = String(seconds).padStart(2, '0');
 }
 
-// הפעלת הטיימר בלולאה קבועה
 updateCountdown();
 setInterval(updateCountdown, 1000);
 
 // ==========================================
-// 3. ניהול הצגת/הסתרת שדה כמות המוזמנים
+// 3. הצגת/הסתרת שדה כמות המוזמנים
 // ==========================================
 function toggleCountField(show) {
     const countGroup = document.getElementById('countGroup');
@@ -58,10 +64,16 @@ function toggleCountField(show) {
 }
 
 // ==========================================
-// 4. שליחת הטופס ל-Supabase ופופ-אפ
+// 4. שליחת הטופס ל-Supabase
 // ==========================================
 async function submitRSVP(event) {
     event.preventDefault();
+    
+    if (!supabaseClient) {
+        showModal('שגיאה', 'מערכת החיבור לנתונים אינה זמינה כרגע. אנא רענן את הדף ונסה שוב.', '⚠️');
+        return;
+    }
+
     const btn = document.getElementById('submitBtn');
     btn.disabled = true;
     btn.innerText = 'שולח...';
@@ -74,12 +86,15 @@ async function submitRSVP(event) {
 
     try {
         const { data, error } = await supabaseClient
-            .from('rsvps')
+            .from('rsvp')
             .insert([{ name, phone, attending: attendingStatus, count, notes }]);
 
-        if (error) throw error;
+        if (error) {
+            console.error('Supabase error details:', error);
+            throw error;
+        }
 
-        // הודעת תודה מותאמת אישית לפי תגובת האורח
+        // הודעות מותאמות אישית
         if (attendingStatus === 'yes') {
             showModal('🎉 איזה כיף!', 'תודה רבה! אישור ההגעה שלך התקבל בהצלחה. מחכים כבר לחגוג איתך!', '🥂');
         } else if (attendingStatus === 'maybe') {
@@ -92,7 +107,7 @@ async function submitRSVP(event) {
         toggleCountField(true);
     } catch (err) {
         console.error('Error submitting RSVP:', err);
-        showModal('אופס...', 'אירעה שגיאה בשליחת הטופס, אנא נסה שוב.', '⚠️');
+        showModal('אופס...', 'אירעה שגיאה בשליחת הטופס. נסה שוב או צור איתנו קשר ישירות.', '⚠️');
     } finally {
         btn.disabled = false;
         btn.innerText = 'אישור הגעה';
@@ -122,20 +137,20 @@ function closeModal() {
 }
 
 // ==========================================
-// 6. ניווט ב-Waze (קויה חולון)
+// 6. ניווט ב-Waze (Coya חולון)
 // ==========================================
 function openWaze() {
-    const location = encodeURIComponent("קויה חולון");
+    const location = encodeURIComponent("Coya חולון");
     window.open(`https://waze.com/ul?q=${location}&navigate=yes`, '_blank');
 }
 
 // ==========================================
-// 7. הוספה ל-Google Calendar (קויה חולון)
+// 7. הוספה ל-Google Calendar (Coya חולון)
 // ==========================================
 function addToGoogleCalendar() {
     const title = encodeURIComponent("החתונה של רועי ונועה 🎉");
     const details = encodeURIComponent("נשמח מאוד לחגוג ולראותכם בין אורחינו!");
-    const location = encodeURIComponent("קויה חולון (Coya)");
+    const location = encodeURIComponent("Coya חולון");
     const start = "20270106T193000";
     const end = "20270107T020000";
 

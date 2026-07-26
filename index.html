@@ -4,10 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Roy & Noa - אישור הגעה</title>
-    <!-- ספריית Supabase -->
+    <!-- 1. טעינת ספריית Supabase ב-head כדי שתהיה זמינה מיד -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
     <!-- פונטים בגוגל -->
     <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600;700&family=Cinzel:wght@600;800&display=swap" rel="stylesheet">
+    
     <style>
         * {
             box-sizing: border-box;
@@ -37,7 +39,6 @@
             overflow: hidden;
         }
 
-        /* באנר תמונה */
         .header-banner {
             width: 100%;
             height: 200px;
@@ -92,7 +93,6 @@
             font-weight: 400;
         }
 
-        /* עיצוב הטיימר */
         .countdown-container {
             background: #faf8f2;
             border: 1px solid rgba(212, 175, 55, 0.3);
@@ -137,7 +137,6 @@
             margin-top: 2px;
         }
 
-        /* כפתורי פעולה מהירה (Waze / יומן) */
         .quick-actions {
             display: flex;
             gap: 10px;
@@ -201,7 +200,6 @@
             box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.12);
         }
 
-        /* כפתורי רדיו מעוצבים */
         .radio-options {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -275,7 +273,6 @@
             pointer-events: none;
         }
 
-        /* פופ-אפ מעוצב */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -345,7 +342,7 @@
         <div class="divider"></div>
         <p class="subtitle">נשמח מאוד לחגוג ולראותכם בין אורחינו!</p>
 
-        <!-- טיימר ספירה לאחור -->
+        <!-- טיימר -->
         <div class="countdown-container">
             <div class="countdown-title">⏱️ עוד נשאר לחתונה:</div>
             <div class="timer-grid">
@@ -368,7 +365,7 @@
             </div>
         </div>
 
-        <!-- כפתורי Waze ויומן -->
+        <!-- כפתורי פעולה מהירה -->
         <div class="quick-actions">
             <button type="button" class="btn-action" onclick="addToGoogleCalendar()">
                 📅 הוסף ליומן
@@ -423,7 +420,7 @@
     </div>
 </div>
 
-<!-- פופ-אפ הודעה מעוצב -->
+<!-- פופ-אפ מעוצב -->
 <div class="modal-overlay" id="customModal">
     <div class="modal-card">
         <div class="modal-icon" id="modalIcon">🎉</div>
@@ -433,7 +430,7 @@
     </div>
 </div>
 
-<!-- טעינת ה-JavaScript מקובץ נפרד -->
+<!-- 2. טעינת הסקריפט שלך (בסוף ה-body) -->
 <script src="script.js"></script>
 
 </body>
