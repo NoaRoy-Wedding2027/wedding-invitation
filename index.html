@@ -3,229 +3,252 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Noa & Roy - Wedding Invitation</title>
+    <title>Roy & Noa - אישור הגעה</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&family=Cinzel:wght@600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600;700&family=Cinzel:wght@500;700&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --accent: #d4af37;
-            --primary: #2c3e50;
-            --bg-color: #faf9f6;
+        * {
+            box-sizing: border-box;
+            transition: all 0.25s ease;
         }
 
         body {
             font-family: 'Assistant', sans-serif;
-            background-color: var(--bg-color);
+            background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
             margin: 0;
-            padding: 20px;
+            padding: 20px 15px;
+            color: #2c3e50;
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            color: #333;
         }
 
         .card {
-            background: #ffffff;
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-            max-width: 480px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 35px 25px;
+            border-radius: 24px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.06), 0 5px 15px rgba(212, 175, 55, 0.08);
             width: 100%;
-            overflow: hidden;
+            max-width: 460px;
             text-align: center;
-            border: 1px solid #eaeaea;
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            position: relative;
         }
 
-        .hero-img {
+        /* עיצוב התמונה העליונה */
+        .couple-img-wrapper {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 18px auto;
+            border-radius: 50%;
+            padding: 4px;
+            background: linear-gradient(135deg, #d4af37 0%, #f3e5ab 50%, #b8952d 100%);
+            box-shadow: 0 8px 20px rgba(212, 175, 55, 0.25);
+        }
+
+        .couple-img {
             width: 100%;
-            height: 280px;
+            height: 100%;
             object-fit: cover;
+            border-radius: 50%;
+            background-color: #fff;
+            display: block;
         }
 
-        .content {
-            padding: 30px 25px;
-        }
-
-        .title-names {
-            font-family: 'Cinzel', 'Assistant', serif;
+        .header-names {
+            font-family: 'Cinzel', serif;
             font-size: 2.2rem;
-            font-weight: 700;
-            color: var(--primary);
-            margin: 10px 0 5px 0;
-            letter-spacing: 1px;
-        }
-
-        .subtitle-wedding {
-            font-size: 1.4rem;
-            color: var(--accent);
-            font-weight: 600;
-            margin-bottom: 15px;
             letter-spacing: 2px;
-        }
-
-        /* עיצוב הספירה לאחור */
-        .countdown-container {
-            display: flex;
-            justify-content: space-around;
-            background: #fdfbf7;
-            border: 1px solid #f0e6d2;
-            border-radius: 12px;
-            padding: 12px 10px;
-            margin: 20px 0;
-        }
-
-        .countdown-box {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-width: 50px;
-        }
-
-        .countdown-number {
-            font-size: 1.4rem;
+            color: #d4af37;
+            margin: 0 0 5px 0;
             font-weight: 700;
-            color: var(--primary);
-            line-height: 1.2;
-        }
-
-        .countdown-label {
-            font-size: 0.75rem;
-            color: #777;
-            margin-top: 2px;
         }
 
         .divider {
+            width: 50px;
             height: 2px;
-            width: 60px;
-            background-color: var(--accent);
-            margin: 15px auto 25px auto;
+            background: #d4af37;
+            margin: 15px auto 20px auto;
+            border-radius: 2px;
+            opacity: 0.6;
+        }
+
+        p.subtitle {
+            color: #7f8c8d;
+            margin-top: 0;
+            margin-bottom: 25px;
+            font-size: 1.05rem;
+            font-weight: 300;
         }
 
         .form-group {
-            margin-bottom: 15px;
+            margin-bottom: 22px;
             text-align: right;
         }
 
         label {
             display: block;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
             font-weight: 600;
+            color: #34495e;
             font-size: 0.95rem;
         }
 
-        input, select, textarea {
+        input[type="text"],
+        input[type="tel"],
+        input[type="number"],
+        textarea {
             width: 100%;
-            padding: 12px;
-            border: 1px solid #cccccc;
-            border-radius: 10px;
+            padding: 14px 16px;
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
             font-family: inherit;
-            box-sizing: border-box;
             font-size: 1rem;
+            background: #fcfcfc;
+            color: #2c3e50;
         }
 
-        input:focus, select:focus, textarea:focus {
-            border-color: var(--accent);
+        input:focus, textarea:focus {
+            border-color: #d4af37;
+            background: #fff;
             outline: none;
+            box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.12);
+        }
+
+        /* עיצוב כפתורי הבחירה */
+        .radio-options {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 5px;
+        }
+
+        .radio-btn-card {
+            position: relative;
+        }
+
+        .radio-btn-card input[type="radio"] {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .radio-btn-card label {
+            display: block;
+            text-align: center;
+            padding: 12px 8px;
+            background: #f8f9fa;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #555;
+            margin: 0;
+        }
+
+        .radio-btn-card input[type="radio"]:checked + label {
+            background: #fefcf0;
+            border-color: #d4af37;
+            color: #b8952d;
+            box-shadow: 0 4px 10px rgba(212, 175, 55, 0.15);
         }
 
         .btn-submit {
-            background-color: var(--primary);
-            color: #ffffff;
+            background: linear-gradient(135deg, #d4af37 0%, #b8952d 100%);
+            color: white;
             border: none;
             width: 100%;
-            padding: 14px;
-            border-radius: 10px;
-            font-size: 1.1rem;
+            padding: 16px;
+            border-radius: 12px;
+            font-size: 1.15rem;
             font-weight: 700;
             cursor: pointer;
-            transition: background-color 0.2s;
             margin-top: 10px;
+            box-shadow: 0 6px 20px rgba(212, 175, 55, 0.3);
+            letter-spacing: 0.5px;
         }
 
         .btn-submit:hover {
-            background-color: #1a252f;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(212, 175, 55, 0.4);
         }
 
-        .success-msg {
-            display: none;
-            background-color: #d4edda;
-            color: #155724;
-            padding: 15px;
-            border-radius: 10px;
-            margin-top: 15px;
-            font-weight: 600;
+        .btn-submit:active {
+            transform: translateY(0);
+        }
+
+        #countGroup {
+            overflow: hidden;
+            max-height: 100px;
+            opacity: 1;
+            transition: all 0.3s ease-in-out;
+        }
+
+        #countGroup.hidden {
+            max-height: 0;
+            opacity: 0;
+            margin-bottom: 0;
+            pointer-events: none;
         }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <img src="couple.jpg" alt="Noa & Roy" class="hero-img" onerror="this.style.display='none'">
-    
-    <div class="content">
-        <div class="title-names">Noa & Roy</div>
-        <div class="subtitle-wedding">מתחתנים! ✨</div>
-        <div style="font-size: 0.95rem; color: #555;">06.01.2027</div>
-
-        <!-- רכיב ספירה לאחור -->
-        <div class="countdown-container">
-            <div class="countdown-box">
-                <span class="countdown-number" id="days">00</span>
-                <span class="countdown-label">ימים</span>
-            </div>
-            <div class="countdown-box">
-                <span class="countdown-number" id="hours">00</span>
-                <span class="countdown-label">שעות</span>
-            </div>
-            <div class="countdown-box">
-                <span class="countdown-number" id="minutes">00</span>
-                <span class="countdown-label">דקות</span>
-            </div>
-            <div class="countdown-box">
-                <span class="countdown-number" id="seconds">00</span>
-                <span class="countdown-label">שניות</span>
-            </div>
-        </div>
-        
-        <div class="divider"></div>
-        <p style="color: #666; margin-bottom: 25px;">נשמח מאוד לראותכם חוגגים איתנו! אנא אשרו את הגעתכם:</p>
-
-        <form id="rsvpForm">
-            <div class="form-group">
-                <label>שם מלא</label>
-                <input type="text" id="guestName" required placeholder="הכנס שם מלא">
-            </div>
-
-            <div class="form-group">
-                <label>מספר טלפון</label>
-                <input type="tel" id="guestPhone" required placeholder="0500000000">
-            </div>
-
-            <div class="form-group">
-                <label>מגיעים?</label>
-                <select id="attending" required>
-                    <option value="yes">מגיעים בשמחה! 🎉</option>
-                    <option value="no">לצערי לא נוכל להגיע 😢</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label>כמות אורחים (כולל אותך)</label>
-                <input type="number" id="guestCount" min="1" max="10" value="1" required>
-            </div>
-
-            <div class="form-group">
-                <label>הערות / ברכה לזוג</label>
-                <textarea id="guestNotes" rows="3" placeholder="רגישויות למזון, ברכות..."></textarea>
-            </div>
-
-            <button type="submit" id="submitBtn" class="btn-submit">שליחת אישור הגעה</button>
-        </form>
-
-        <div id="successMessage" class="success-msg">
-            תודה רבה! אישור ההגעה שלך התקבל בהצלחה ❤️
-        </div>
+    <!-- תמונת בני הזוג -->
+    <div class="couple-img-wrapper">
+        <img src="https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=400&q=80" alt="Roy & Noa" class="couple-img" id="couplePhoto">
     </div>
+
+    <div class="header-names">ROY & NOA</div>
+    <div class="divider"></div>
+    <p class="subtitle">נשמח מאוד לחגוג ולראותכם בין אורחינו!</p>
+
+    <form id="rsvpForm" onsubmit="submitRSVP(event)">
+        <div class="form-group">
+            <label for="name">שם מלא</label>
+            <input type="text" id="name" required placeholder="הכנס שם ושם משפחה">
+        </div>
+
+        <div class="form-group">
+            <label for="phone">מספר טלפון</label>
+            <input type="tel" id="phone" required placeholder="050-0000000">
+        </div>
+
+        <div class="form-group">
+            <label>האם תגיעו לחגוג איתנו?</label>
+            <div class="radio-options">
+                <div class="radio-btn-card">
+                    <input type="radio" id="attendingYes" name="attending" value="yes" checked onchange="toggleCountField(true)">
+                    <label for="attendingYes">מגיע/ה</label>
+                </div>
+                <div class="radio-btn-card">
+                    <input type="radio" id="attendingMaybe" name="attending" value="maybe" onchange="toggleCountField(false)">
+                    <label for="attendingMaybe">אעדכן בהמשך</label>
+                </div>
+                <div class="radio-btn-card">
+                    <input type="radio" id="attendingNo" name="attending" value="no" onchange="toggleCountField(false)">
+                    <label for="attendingNo">לא מגיע/ה</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group" id="countGroup">
+            <label for="count">כמות אורחים</label>
+            <input type="number" id="count" min="1" value="1">
+        </div>
+
+        <div class="form-group">
+            <label for="notes">הערות / ברכות</label>
+            <textarea id="notes" rows="3" placeholder="משהו שחשוב שנדע? (רגישויות, מנות מיוחדות...)"></textarea>
+        </div>
+
+        <button type="submit" class="btn-submit" id="submitBtn">אישור הגעה</button>
+    </form>
 </div>
 
 <script>
@@ -234,60 +257,63 @@
 
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // לוגיקת ספירה לאחור ל-06/01/2027
-    const targetDate = new Date('2027-01-06T00:00:00').getTime();
-
-    function updateCountdown() {
-        const now = new Date().getTime();
-        const difference = targetDate - now;
-
-        if (difference > 0) {
-            const days = Math.floor(difference / (1000 * 60 * 60 * 24));
-            const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((difference % (1000 * 60)) / 1000);
-
-            document.getElementById('days').innerText = String(days).padStart(2, '0');
-            document.getElementById('hours').innerText = String(hours).padStart(2, '0');
-            document.getElementById('minutes').innerText = String(minutes).padStart(2, '0');
-            document.getElementById('seconds').innerText = String(seconds).padStart(2, '0');
+    function toggleCountField(show) {
+        const countGroup = document.getElementById('countGroup');
+        if (show) {
+            countGroup.classList.remove('hidden');
         } else {
-            document.querySelector('.countdown-container').innerHTML = '<div style="font-weight:700; color:var(--accent);">היום הגדול הגיע! 🎉</div>';
+            countGroup.classList.add('hidden');
         }
     }
 
-    setInterval(updateCountdown, 1000);
-    updateCountdown();
-
-    // טיפול בטופס ה-RSVP
-    document.getElementById('rsvpForm').addEventListener('submit', async (e) => {
+    async function submitRSVP(e) {
         e.preventDefault();
+        
         const btn = document.getElementById('submitBtn');
-        btn.innerText = 'שולח...';
         btn.disabled = true;
+        btn.innerText = 'שולח...';
 
-        const name = document.getElementById('guestName').value;
-        const phone = document.getElementById('guestPhone').value;
-        const attending = document.getElementById('attending').value === 'yes';
-        const count = parseInt(document.getElementById('guestCount').value) || 1;
-        const notes = document.getElementById('guestNotes').value;
+        const name = document.getElementById('name').value.trim();
+        const phone = document.getElementById('phone').value.trim();
+        const userNotes = document.getElementById('notes').value.trim();
+        const attendingValue = document.querySelector('input[name="attending"]:checked').value;
+
+        const isYes = (attendingValue === 'yes');
+        const isMaybe = (attendingValue === 'maybe');
+        
+        const guestCount = isYes ? (parseInt(document.getElementById('count').value) || 1) : 0;
+        
+        let finalNotes = userNotes;
+        if (isMaybe) {
+            finalNotes = userNotes ? `[אעדכן בהמשך] ${userNotes}` : '[אעדכן בהמשך]';
+        }
 
         try {
-            const { error } = await supabaseClient.from('rsvp').insert([
-                { name, phone, attending, count, notes }
-            ]);
+            const { error } = await supabaseClient
+                .from('rsvp')
+                .insert([
+                    {
+                        name: name,
+                        phone: phone,
+                        attending: isYes,
+                        count: guestCount,
+                        notes: finalNotes
+                    }
+                ]);
 
             if (error) throw error;
 
-            document.getElementById('rsvpForm').style.display = 'none';
-            document.getElementById('successMessage').style.display = 'block';
+            alert('תודה רבה! האישור התקבל בהצלחה.');
+            document.getElementById('rsvpForm').reset();
+            toggleCountField(true);
         } catch (err) {
-            alert('שגיאה בשמירה: ' + err.message);
             console.error(err);
-            btn.innerText = 'שליחת אישור הגעה';
+            alert('אירעה שגיאה בשליחת הטופס. אנא נסה שוב.');
+        } finally {
             btn.disabled = false;
+            btn.innerText = 'אישור הגעה';
         }
-    });
+    }
 </script>
 
 </body>

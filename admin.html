@@ -35,7 +35,7 @@
 
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
             gap: 15px;
             margin-bottom: 20px;
         }
@@ -47,6 +47,10 @@
             text-align: center;
             box-shadow: 0 2px 8px rgba(0,0,0,0.05);
             border-top: 4px solid #d4af37;
+        }
+
+        .stat-box.maybe {
+            border-top-color: #f39c12;
         }
 
         .stat-num {
@@ -128,6 +132,7 @@
         }
 
         .badge-yes { background: #d4edda; color: #155724; padding: 4px 8px; border-radius: 6px; }
+        .badge-maybe { background: #fef9e7; color: #d35400; padding: 4px 8px; border-radius: 6px; border: 1px solid #f39c12; }
         .badge-no { background: #f8d7da; color: #721c24; padding: 4px 8px; border-radius: 6px; }
 
         .turbo-controls {
@@ -153,13 +158,17 @@
             <div>אישרו הגעה</div>
             <div class="stat-num" id="approvedCount">0</div>
         </div>
+        <div class="stat-box maybe">
+            <div>אעדכן בהמשך</div>
+            <div class="stat-num" id="maybeCount">0</div>
+        </div>
         <div class="stat-box">
             <div>סירבו</div>
             <div class="stat-num" id="declinedCount">0</div>
         </div>
     </div>
 
-    <!-- כלי שליחה מהירה מרוכזת (טורבו) -->
+    <!-- שליחה מהירה ברצף -->
     <div class="card">
         <h3>🚀 שליחה מהירה ברצף (מצב טורבו)</h3>
         <p style="font-size: 0.9rem; color: #666;">
@@ -210,7 +219,6 @@
 
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // טקסט הזמנה נקי ללא תווים מיוחדים
     function getInviteMsgText() {
         const text = `שלום!
 בשמחה ובהתרגשות אנו מזמינים אותך לחגוג איתנו את יום חתונתנו.
@@ -224,7 +232,6 @@ ${SITE_URL}
         return encodeURIComponent(text);
     }
 
-    // טקסט תזכורת נקי ללא תווים מיוחדים
     function getReminderMsgText() {
         const text = `שלום!
 תזכורת קטנה לגבי החתונה של נועה ורועי.
@@ -239,7 +246,6 @@ ${SITE_URL}
         return encodeURIComponent(text);
     }
 
-    // שליחה יחידנית
     function sendSingleWhatsApp(type = 'invite') {
         const rawPhone = document.getElementById('singlePhone').value;
         const cleanPhone = rawPhone.replace(/[^0-9]/g, '').replace(/^0/, '');
@@ -253,14 +259,13 @@ ${SITE_URL}
         window.open(`https://wa.me/972${cleanPhone}?text=${msg}`, '_blank');
     }
 
-    // --- מנגנון שליחה ברצף (טורבו) משופר ---
+    // מנגנון שליחה ברצף (טורבו)
     let turboList = [];
     let turboIndex = 0;
 
     function handleTurboClick() {
         const btn = document.getElementById('turboBtn');
 
-        // אם עדיין לא התחלנו את הסבב
         if (turboList.length === 0 || turboIndex >= turboList.length) {
             const rawText = document.getElementById('bulkPhones').value;
             const lines = rawText.split(/[\n,]+/);
@@ -277,11 +282,9 @@ ${SITE_URL}
             turboIndex = 0;
         }
 
-        // שליחה למספר הנוכחי
         const currentPhone = turboList[turboIndex];
         turboIndex++;
 
-        // עדכון סטטוס והערה על הכפתור
         document.getElementById('turboStatus').innerText = `נשלח ${turboIndex} מתוך ${turboList.length}`;
         
         if (turboIndex < turboList.length) {
@@ -290,7 +293,6 @@ ${SITE_URL}
             btn.innerText = '⚡ התחל שליחה מחדש';
         }
 
-        // פתיחת וואטסאפ
         window.open(`https://wa.me/972${currentPhone}?text=${getInviteMsgText()}`, '_blank');
 
         if (turboIndex >= turboList.length) {
@@ -302,7 +304,6 @@ ${SITE_URL}
         }
     }
 
-    // מחיקת אורח
     async function deleteGuest(id, name) {
         if (!confirm(`האם אתה בטוח שברצונך למחוק את "${name || 'אורח זה'}"?`)) return;
 
@@ -315,29 +316,38 @@ ${SITE_URL}
         }
     }
 
-    // טעינת נתונים
     async function fetchGuests() {
         try {
             const { data, error } = await supabaseClient.from('rsvp').select('*').order('created_at', { ascending: false });
             if (error) throw error;
 
-            let total = 0, approved = 0, declined = 0;
+            let total = 0, approved = 0, maybe = 0, declined = 0;
             const tbody = document.getElementById('guestsTable');
             
             if (!data || data.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">אין אישורים במערכת עדיין.</td></tr>';
                 document.getElementById('totalGuests').innerText = 0;
                 document.getElementById('approvedCount').innerText = 0;
+                document.getElementById('maybeCount').innerText = 0;
                 document.getElementById('declinedCount').innerText = 0;
                 return;
             }
 
             tbody.innerHTML = data.map(g => {
-                if (g.attending) {
+                const notesText = g.notes || '';
+                const isMaybe = notesText.includes('[אעדכן בהמשך]');
+
+                let statusBadge = '';
+                if (isMaybe) {
+                    maybe++;
+                    statusBadge = '<span class="badge-maybe">אעדכן בהמשך</span>';
+                } else if (g.attending) {
                     total += (parseInt(g.count) || 1);
                     approved++;
+                    statusBadge = '<span class="badge-yes">מגיע</span>';
                 } else {
                     declined++;
+                    statusBadge = '<span class="badge-no">לא מגיע</span>';
                 }
 
                 const clean = g.phone ? g.phone.replace(/[^0-9]/g, '').replace(/^0/, '') : '';
@@ -349,9 +359,9 @@ ${SITE_URL}
                     <tr>
                         <td><strong>${g.name || '-'}</strong></td>
                         <td>${g.phone || '-'}</td>
-                        <td>${g.count || 1}</td>
-                        <td>${g.attending ? '<span class="badge-yes">מגיע</span>' : '<span class="badge-no">לא מגיע</span>'}</td>
-                        <td>${g.notes || '-'}</td>
+                        <td>${g.attending && !isMaybe ? (g.count || 1) : 0}</td>
+                        <td>${statusBadge}</td>
+                        <td>${notesText.replace('[אעדכן בהמשך]', '').trim() || '-'}</td>
                         <td>
                             <div class="actions-cell">
                                 ${inviteBtn}
@@ -365,6 +375,7 @@ ${SITE_URL}
 
             document.getElementById('totalGuests').innerText = total;
             document.getElementById('approvedCount').innerText = approved;
+            document.getElementById('maybeCount').innerText = maybe;
             document.getElementById('declinedCount').innerText = declined;
 
         } catch (err) {
