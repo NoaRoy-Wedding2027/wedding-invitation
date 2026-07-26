@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ניהול מוזמנים - חתונה</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Supabase Client JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style> body { font-family: 'Assistant', sans-serif; } </style>
+</head>
+<body class="bg-gray-100 p-4 sm:p-8 min-h-screen">
+
+    <div class="max-w-5xl mx-auto bg-white rounded-2xl shadow-xl p-6">
+        
+        <!-- כותרת ורענון -->
+        <div class="flex justify-between items-center border-b pb-4 mb-6">
+            <h1 class="text-2xl font-bold text-gray-800">📋 לוח ניהול מוזמנים (פרטי)</h1>
+            <button onclick="loadGuests()" class="bg-amber-600 hover:bg-amber-700 text-white font-semibold py-2 px-4 rounded-xl shadow transition flex items-center gap-2">
+                🔄 <span>רענון נתונים</span>
+            </button>
+        </div>
+        
+        <!-- מוני סטטיסטיקה -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
+            <div class="bg-amber-50 border border-amber-200 p-4 rounded-xl text-center">
+                <span class="block text-gray-500 text-sm font-semibold">סה"כ מאשרים</span>
+                <span id="totalAttending" class="text-3xl font-bold text-amber-700">0</span>
+            </div>
+            <div class="bg-green-50 border border-green-200 p-4 rounded-xl text-center">
+                <span class="block text-gray-500 text-sm font-semibold">כמות אורחים כוללת</span>
+                <span id="totalGuests" class="text-3xl font-bold text-green-700">0</span>
+            </div>
+            <div class="bg-red-50 border border-red-200 p-4 rounded-xl text-center col-span-2 sm:col-span-1">
+                <span class="block text-gray-500 text-sm font-semibold">לא מגיעים</span>
+                <span id="totalDeclined" class="text-3xl font-bold text-red-700">0</span>
+            </div>
+        </div>
+
+        <!-- טבלת המוזמנים -->
+        <div class="overflow-x-auto">
+            <table class="w-full text-right border-collapse">
+                <thead>
+                    <tr class="bg-gray-50 border-b text-gray-600 text-sm">
+                        <th class="p-3">שם מלא</th>
+                        <th class="p-3">טלפון</th>
+                        <th class="p-3">סטטוס</th>
+                        <th class="p-3">כמות</th>
+                        <th class="p-3 text-center">פעולות</th>
+                    </tr>
+                </thead>
+                <tbody id="adminTableBody" class="divide-y divide-gray-100">
+                    <tr>
+                        <td colspan="5" class="text-center p-6 text-gray-400">טוען נתונים...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // חיבור ל-Supabase שלך
+        const SUPABASE_URL = 'https://hmafronrwuxjizfkhxju.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhtYWZyb25yd3V4aml6ZmtoeGp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUwNzIxNDEsImV4cCI6MjEwMDY0ODE0MX0.sBVh1pf4ZgvEDsMs0TRX9DMpg5uIj9dwPkk2UMWm-IQ';
+        
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        async function loadGuests() {
+            const tableBody = document.getElementById('adminTableBody');
+            tableBody.innerHTML = '<tr><td colspan="5" class="text-center p-6 text-gray-400">טוען נתונים...</td></tr>';
+
+            try {
+                // משיכת כל המוזמנים מהענן
+                const { data: guests, error } = await _supabase
+                    .from('guests')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                tableBody.innerHTML = '';
+
+                let totalAttending = 0;
+                let totalGuestsCount = 0;
+                let totalDeclined = 0;
+
+                if (!guests || guests.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="5" class="text-center p-6 text-gray-500">עדיין אין נרשמים ברשימה.</td></tr>';
+                    return;
+                }
+
+                guests.forEach(guest => {
+                    if (guest.status === 'מגיע/ה') {
+                        totalAttending++;
+                        totalGuestsCount += (guest.guest_count || 1);
+                    } else {
+                        totalDeclined++;
+                    }
+
+                    // התאמת טלפון לקישור WhatsApp בינלאומי
+                    let rawPhone = guest.phone.replace(/[^0-9]/g, '');
+                    if (rawPhone.startsWith('0')) {
+                        rawPhone = '972' + rawPhone.slice(1);
+                    }
+
+                    // הודעה מותאמת אישית לוואטסאפ
+                    const message = encodeURIComponent(`היי ${guest.full_name}, תודה רבה שאישרת הגעה לחתונה שלנו! נתראה בשמחות ❤️`);
+                    const waUrl = `https://wa.me/${rawPhone}?text=${message}`;
+
+                    const tr = document.createElement('tr');
+                    tr.className = 'hover:bg-gray-50 transition';
+                    tr.innerHTML = `
+                        <td class="p-3 font-semibold text-gray-800">${guest.full_name}</td>
+                        <td class="p-3 text-gray-600" dir="ltr">${guest.phone}</td>
+                        <td class="p-3">
+                            <span class="px-2.5 py-1 rounded-full text-xs font-bold ${guest.status === 'מגיע/ה' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                ${guest.status}
+                            </span>
+                        </td>
+                        <td class="p-3 text-gray-700 font-bold">${guest.status === 'מגיע/ה' ? guest.guest_count : 0}</td>
+                        <td class="p-3 text-center">
+                            <div class="flex items-center justify-center gap-2">
+                                <a href="${waUrl}" target="_blank" class="inline-flex items-center gap-1 bg-green-500 hover:bg-green-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow transition">
+                                    💬 WhatsApp
+                                </a>
+                                <button onclick="deleteGuest(${guest.id}, '${guest.full_name}')" class="inline-flex items-center gap-1 bg-red-500 hover:bg-red-600 text-white text-xs font-bold px-2.5 py-1.5 rounded-lg shadow transition">
+                                    🗑️ מחיקה
+                                </button>
+                            </div>
+                        </td>
+                    `;
+                    tableBody.appendChild(tr);
+                });
+
+                // עדכון המונים
+                document.getElementById('totalAttending').innerText = totalAttending;
+                document.getElementById('totalGuests').innerText = totalGuestsCount;
+                document.getElementById('totalDeclined').innerText = totalDeclined;
+
+            } catch (err) {
+                console.error('Error fetching guests:', err);
+                tableBody.innerHTML = '<tr><td colspan="5" class="text-center p-6 text-red-500">שגיאה שטעינת הנתונים, נסה לרענן.</td></tr>';
+            }
+        }
+
+        async function deleteGuest(id, name) {
+            if (!confirm(`האם אתה בטוח שברצונך למחוק את הרשומה של "${name}"?`)) {
+                return;
+            }
+
+            try {
+                const { error } = await _supabase
+                    .from('guests')
+                    .delete()
+                    .eq('id', id);
+
+                if (error) throw error;
+
+                // טעינה מחדש של הרשימה לאחר המחיקה
+                loadGuests();
+            } catch (err) {
+                console.error('Error deleting guest:', err);
+                alert('אירעה שגיאה בעת מחיקת הרשומה. ודא שהרשאות ה-Delete מופעלות ב-Supabase.');
+            }
+        }
+
+        // טעינה ראשונית של הנתונים בעת פתיחת הדף
+        loadGuests();
+    </script>
+</body>
+</html>
