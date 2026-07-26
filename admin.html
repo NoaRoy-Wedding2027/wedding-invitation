@@ -16,7 +16,7 @@
         }
 
         .container {
-            max-width: 900px;
+            max-width: 950px;
             margin: 0 auto;
         }
 
@@ -55,7 +55,7 @@
             color: #2c3e50;
         }
 
-        input[type="tel"] {
+        textarea, input[type="tel"] {
             width: 100%;
             padding: 12px;
             border: 1px solid #ccc;
@@ -79,8 +79,32 @@
             display: inline-block;
         }
 
+        .btn-turbo {
+            background: #8e44ad;
+            color: white;
+            font-size: 1.1rem;
+            padding: 12px 24px;
+        }
+
         .btn:hover {
             opacity: 0.9;
+        }
+
+        .btn-delete {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.8rem;
+        }
+
+        .actions-cell {
+            display: flex;
+            gap: 8px;
+            align-items: center;
         }
 
         table {
@@ -105,6 +129,26 @@
 
         .badge-yes { background: #d4edda; color: #155724; padding: 4px 8px; border-radius: 6px; }
         .badge-no { background: #f8d7da; color: #721c24; padding: 4px 8px; border-radius: 6px; }
+
+        .mode-selector {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .mode-btn {
+            padding: 8px 16px;
+            border: 1px solid #2c3e50;
+            border-radius: 20px;
+            background: white;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .mode-btn.active {
+            background: #2c3e50;
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -128,12 +172,28 @@
         </div>
     </div>
 
-    <!-- כלי שליחת הוואטסאפ -->
+    <!-- כלי שליחה מהירה מרוכזת (טורבו) -->
     <div class="card">
-        <h3>📲 שליחת הזמנה בוואטסאפ למספר טלפון</h3>
-        <p style="font-size: 0.9rem; color: #666;">הכנס מספר טלפון (למשל: 0501234567):</p>
-        <input type="tel" id="singlePhone" placeholder="הכנס מספר טלפון כאן...">
-        <button class="btn" onclick="sendSingleWhatsApp()">פתח WhatsApp ושְלַח</button>
+        <h3>🚀 שליחה מהירה ברצף (מצב טורבו)</h3>
+        <p style="font-size: 0.9rem; color: #666;">
+            הדבק רשימת מספרי טלפון (בשורות נפרדות או מופרדים בפסיקים). המערכת תפתח לך חלון WhatsApp אחד אחרי השני בלחיצה אחת:
+        </p>
+        <textarea id="bulkPhones" rows="4" placeholder="0501234567&#10;0529876543&#10;0541112233"></textarea>
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+            <button class="btn btn-turbo" onclick="startTurboMode()">⚡ התחל שליחה ברצף</button>
+            <span id="turboStatus" style="font-weight: bold; color: #8e44ad;"></span>
+        </div>
+    </div>
+
+    <!-- שליחה לבודד -->
+    <div class="card">
+        <h3>📲 שליחת הזמנה/תזכורת למספר בודד</h3>
+        <input type="tel" id="singlePhone" placeholder="הכנס מספר טלפון...">
+        <div style="display: flex; gap: 10px;">
+            <button class="btn" onclick="sendSingleWhatsApp('invite')">שלא הזמנה</button>
+            <button class="btn" style="background: #3498db;" onclick="sendSingleWhatsApp('reminder')">שלא תזכורת</button>
+        </div>
     </div>
 
     <!-- טבלת נרשמים -->
@@ -146,7 +206,7 @@
                 <th>כמות</th>
                 <th>סטטוס</th>
                 <th>הערות</th>
-                <th>פעולה</th>
+                <th>פעולות</th>
             </tr>
         </thead>
         <tbody id="guestsTable">
@@ -156,26 +216,43 @@
 </div>
 
 <script>
-    const SITE_URL = 'https://roynoa-wedding2027.github.io/wedding-invitation/';
+    const SITE_URL = 'https://NoaRoy-wedding2027.github.io/wedding-invitation/';
 
     const SUPABASE_URL = 'https://hmafronrwuxjizfkhxju.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_lTp_YIawnPvil699Ikc_Sw_5KnnJZPp';
 
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // הטקסט המעוצב של ההודעה שנשלחת בוואטסאפ
-    function getMsgText() {
-        return encodeURIComponent(
-`✨ *Roy & Noa מתחתנים!* ✨
+    // טקסט הזמנה רגילה
+    function getInviteMsgText() {
+        const text = `שלום!
+בשמחה ובהתרגשות אנו מזמינים אותך לחגוג איתנו את יום חתונתנו.
 
-נשמח מאוד לראותכם חוגגים איתנו ביום המיוחד שלנו! 🎉
-לאישור הגעה בלחיצה אחת:
-${SITE_URL}`
-        );
+לצפייה בהזמנה ולאישור הגעה:
+${SITE_URL}
+
+נשמח מאוד לראותך!
+באהבה,
+נועה ורועי`;
+        return encodeURIComponent(text);
     }
 
-    // שליחה למספר שהקלדת
-    function sendSingleWhatsApp() {
+    // טקסט תזכורת
+    function getReminderMsgText() {
+        const text = `היי! 
+תזכורת קטנה וחמה לגבי החתונה של נועה ורועי 🎉
+נשמח מאוד לדעת אם תוכלי/תוכל להגיע ולחגוג איתנו!
+
+לאישור הגעה מהיר בלחיצה אחת:
+${SITE_URL}
+
+מחכים לראותך!
+נועה ורועי`;
+        return encodeURIComponent(text);
+    }
+
+    // שליחה יחידנית
+    function sendSingleWhatsApp(type = 'invite') {
         const rawPhone = document.getElementById('singlePhone').value;
         const cleanPhone = rawPhone.replace(/[^0-9]/g, '').replace(/^0/, '');
 
@@ -184,11 +261,68 @@ ${SITE_URL}`
             return;
         }
 
-        const url = `https://wa.me/972${cleanPhone}?text=${getMsgText()}`;
-        window.open(url, '_blank');
+        const msg = (type === 'reminder') ? getReminderMsgText() : getInviteMsgText();
+        window.open(`https://wa.me/972${cleanPhone}?text=${msg}`, '_blank');
     }
 
-    // טעינת המוזמנים מ-Supabase
+    // --- לוגיקת מצב טורבו לשליחה ברצף ---
+    let turboList = [];
+    let turboIndex = 0;
+
+    function startTurboMode() {
+        const rawText = document.getElementById('bulkPhones').value;
+        const lines = rawText.split(/[\n,]+/);
+        
+        turboList = lines
+            .map(p => p.replace(/[^0-9]/g, '').replace(/^0/, ''))
+            .filter(p => p.length >= 8);
+
+        if (turboList.length === 0) {
+            alert('אנא הכנס רשימת מספרי טלפון תקינים.');
+            return;
+        }
+
+        turboIndex = 0;
+        sendNextTurbo();
+    }
+
+    function sendNextTurbo() {
+        if (turboIndex >= turboList.length) {
+            document.getElementById('turboStatus').innerText = '🎉 הסתיימה השליחה לכל הרשימה!';
+            alert('סיימת לשלוח לכל הרשימה!');
+            return;
+        }
+
+        const phone = turboList[turboIndex];
+        turboIndex++;
+
+        document.getElementById('turboStatus').innerText = `שולח ${turboIndex} מתוך ${turboList.length}...`;
+        
+        // פותח חלון וואטסאפ
+        window.open(`https://wa.me/972${phone}?text=${getInviteMsgText()}`, '_blank');
+
+        // מציע לעבור לבא בתור
+        setTimeout(() => {
+            if (confirm(`הודעה ${turboIndex} נפתחה. לעבור למספר הבא בתור?`)) {
+                sendNextTurbo();
+            }
+        }, 500);
+    }
+
+    // מחיקת אורח
+    async function deleteGuest(id, name) {
+        if (!confirm(`האם אתה בטוח שברצונך למחוק את "${name || 'אורח זה'}"?`)) return;
+
+        try {
+            const { error } = await supabaseClient.from('rsvp').delete().eq('id', id);
+            if (error) throw error;
+            fetchGuests();
+        } catch (err) {
+            alert('שגיאה במחיקה: ' + err.message);
+        }
+    }
+
+    // טעינת נתונים
     async function fetchGuests() {
         try {
             const { data, error } = await supabaseClient.from('rsvp').select('*').order('created_at', { ascending: false });
@@ -199,6 +333,9 @@ ${SITE_URL}`
             
             if (!data || data.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">אין אישורים במערכת עדיין.</td></tr>';
+                document.getElementById('totalGuests').innerText = 0;
+                document.getElementById('approvedCount').innerText = 0;
+                document.getElementById('declinedCount').innerText = 0;
                 return;
             }
 
@@ -211,7 +348,9 @@ ${SITE_URL}`
                 }
 
                 const clean = g.phone ? g.phone.replace(/[^0-9]/g, '').replace(/^0/, '') : '';
-                const waBtn = clean ? `<a href="https://wa.me/972${clean}?text=${getMsgText()}" target="_blank" class="btn" style="padding: 4px 8px; font-size: 0.8rem;">💬 WhatsApp</a>` : '-';
+                const inviteBtn = clean ? `<a href="https://wa.me/972${clean}?text=${getInviteMsgText()}" target="_blank" class="btn" style="padding: 4px 8px; font-size: 0.8rem;">הזמנה</a>` : '';
+                const reminderBtn = clean ? `<a href="https://wa.me/972${clean}?text=${getReminderMsgText()}" target="_blank" class="btn" style="padding: 4px 8px; font-size: 0.8rem; background: #3498db;">תזכורת</a>` : '';
+                const deleteBtn = `<button class="btn-delete" onclick="deleteGuest(${g.id}, '${(g.name || '').replace(/'/g, "\\'")}')">🗑️</button>`;
 
                 return `
                     <tr>
@@ -220,7 +359,13 @@ ${SITE_URL}`
                         <td>${g.count || 1}</td>
                         <td>${g.attending ? '<span class="badge-yes">מגיע</span>' : '<span class="badge-no">לא מגיע</span>'}</td>
                         <td>${g.notes || '-'}</td>
-                        <td>${waBtn}</td>
+                        <td>
+                            <div class="actions-cell">
+                                ${inviteBtn}
+                                ${reminderBtn}
+                                ${deleteBtn}
+                            </div>
+                        </td>
                     </tr>
                 `;
             }).join('');
@@ -230,8 +375,8 @@ ${SITE_URL}`
             document.getElementById('declinedCount').innerText = declined;
 
         } catch (err) {
-            console.error('שגיאה בטעינת נתונים:', err);
-            document.getElementById('guestsTable').innerHTML = `<tr><td colspan="6" style="text-align:center; color:red;">שגיאה בחיבור ל-Supabase. בדוק את ה-URL וה-Key.</td></tr>`;
+            console.error(err);
+            document.getElementById('guestsTable').innerHTML = `<tr><td colspan="6" style="text-align:center; color:red;">שגיאה בטעינה.</td></tr>`;
         }
     }
 
