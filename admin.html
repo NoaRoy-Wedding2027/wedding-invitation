@@ -3,173 +3,240 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ניהול מוזמנים - חתונה</title>
-    
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&display=swap" rel="stylesheet">
-    <!-- Supabase Client JS -->
+    <title>ניהול אישורי הגעה - Roy & Noa</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Assistant', sans-serif;
+            background-color: #f4f6f9;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
 
-    <style> body { font-family: 'Assistant', sans-serif; } </style>
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            margin-bottom: 25px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-box {
+            background: #fff;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            border-top: 4px solid #d4af37;
+        }
+
+        .stat-num {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        input[type="tel"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-family: inherit;
+            margin-bottom: 10px;
+            font-size: 1rem;
+        }
+
+        .btn {
+            background: #25D366;
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.95rem;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+
+        th, td {
+            padding: 12px 15px;
+            text-align: right;
+            border-bottom: 1px solid #eee;
+        }
+
+        th {
+            background: #2c3e50;
+            color: white;
+        }
+
+        .badge-yes { background: #d4edda; color: #155724; padding: 4px 8px; border-radius: 6px; }
+        .badge-no { background: #f8d7da; color: #721c24; padding: 4px 8px; border-radius: 6px; }
+    </style>
 </head>
-<body class="bg-gray-100 p-4 sm:p-8 min-h-screen">
+<body>
 
-    <div class="max-w-5xl mx-auto bg-white rounded-2xl shadow-xl p-6">
-        
-        <!-- כותרת ורענון -->
-        <div class="flex justify-between items-center border-b pb-4 mb-6">
-            <h1 class="text-2xl font-bold text-gray-800">📋 לוח ניהול מוזמנים (פרטי)</h1>
-            <button onclick="loadGuests()" class="bg-amber-600 hover:bg-amber-700 text-white font-semibold py-2 px-4 rounded-xl shadow transition flex items-center gap-2">
-                🔄 <span>רענון נתונים</span>
-            </button>
-        </div>
-        
-        <!-- מוני סטטיסטיקה -->
-        <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
-            <div class="bg-amber-50 border border-amber-200 p-4 rounded-xl text-center">
-                <span class="block text-gray-500 text-sm font-semibold">סה"כ מאשרים</span>
-                <span id="totalAttending" class="text-3xl font-bold text-amber-700">0</span>
-            </div>
-            <div class="bg-green-50 border border-green-200 p-4 rounded-xl text-center">
-                <span class="block text-gray-500 text-sm font-semibold">כמות אורחים כוללת</span>
-                <span id="totalGuests" class="text-3xl font-bold text-green-700">0</span>
-            </div>
-            <div class="bg-red-50 border border-red-200 p-4 rounded-xl text-center col-span-2 sm:col-span-1">
-                <span class="block text-gray-500 text-sm font-semibold">לא מגיעים</span>
-                <span id="totalDeclined" class="text-3xl font-bold text-red-700">0</span>
-            </div>
-        </div>
+<div class="container">
+    <h1>👑 לוח ניהול - Roy & Noa Wedding</h1>
 
-        <!-- טבלת המוזמנים -->
-        <div class="overflow-x-auto">
-            <table class="w-full text-right border-collapse">
-                <thead>
-                    <tr class="bg-gray-50 border-b text-gray-600 text-sm">
-                        <th class="p-3">שם מלא</th>
-                        <th class="p-3">טלפון</th>
-                        <th class="p-3">סטטוס</th>
-                        <th class="p-3">כמות</th>
-                        <th class="p-3 text-center">פעולות</th>
-                    </tr>
-                </thead>
-                <tbody id="adminTableBody" class="divide-y divide-gray-100">
-                    <tr>
-                        <td colspan="5" class="text-center p-6 text-gray-400">טוען נתונים...</td>
-                    </tr>
-                </tbody>
-            </table>
+    <!-- סטטיסטיקות -->
+    <div class="stats-grid">
+        <div class="stat-box">
+            <div>סה"כ אורחים מגיעים</div>
+            <div class="stat-num" id="totalGuests">0</div>
+        </div>
+        <div class="stat-box">
+            <div>אישרו הגעה</div>
+            <div class="stat-num" id="approvedCount">0</div>
+        </div>
+        <div class="stat-box">
+            <div>סירבו</div>
+            <div class="stat-num" id="declinedCount">0</div>
         </div>
     </div>
 
-    <script>
-        // חיבור ל-Supabase שלך
-        const SUPABASE_URL = 'https://hmafronrwuxjizfkhxju.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhtYWZyb25yd3V4aml6ZmtoeGp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUwNzIxNDEsImV4cCI6MjEwMDY0ODE0MX0.sBVh1pf4ZgvEDsMs0TRX9DMpg5uIj9dwPkk2UMWm-IQ';
-        
-        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    <!-- כלי שליחת הוואטסאפ -->
+    <div class="card">
+        <h3>📲 שליחת הזמנה בוואטסאפ למספר טלפון</h3>
+        <p style="font-size: 0.9rem; color: #666;">הכנס מספר טלפון (למשל: 0501234567):</p>
+        <input type="tel" id="singlePhone" placeholder="הכנס מספר טלפון כאן...">
+        <button class="btn" onclick="sendSingleWhatsApp()">פתח WhatsApp ושְלַח</button>
+    </div>
 
-        async function loadGuests() {
-            const tableBody = document.getElementById('adminTableBody');
-            tableBody.innerHTML = '<tr><td colspan="5" class="text-center p-6 text-gray-400">טוען נתונים...</td></tr>';
+    <!-- טבלת נרשמים -->
+    <h3>רשימת אישורים שהתקבלו מהאתר</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>שם</th>
+                <th>טלפון</th>
+                <th>כמות</th>
+                <th>סטטוס</th>
+                <th>הערות</th>
+                <th>פעולה</th>
+            </tr>
+        </thead>
+        <tbody id="guestsTable">
+            <tr><td colspan="6" style="text-align:center;">טוען נתונים...</td></tr>
+        </tbody>
+    </table>
+</div>
 
-            try {
-                // משיכת כל המוזמנים מהענן
-                const { data: guests, error } = await _supabase
-                    .from('guests')
-                    .select('*')
-                    .order('created_at', { ascending: false });
+<script>
+    const SITE_URL = 'https://roynoa-wedding2027.github.io/wedding-invitation/';
 
-                if (error) throw error;
+    const SUPABASE_URL = 'https://hmafronrwuxjizfkhxju.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_lTp_YIawnPvil699Ikc_Sw_5KnnJZPp';
 
-                tableBody.innerHTML = '';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-                let totalAttending = 0;
-                let totalGuestsCount = 0;
-                let totalDeclined = 0;
+    // הטקסט המעוצב של ההודעה שנשלחת בוואטסאפ
+    function getMsgText() {
+        return encodeURIComponent(
+`✨ *Roy & Noa מתחתנים!* ✨
 
-                if (!guests || guests.length === 0) {
-                    tableBody.innerHTML = '<tr><td colspan="5" class="text-center p-6 text-gray-500">עדיין אין נרשמים ברשימה.</td></tr>';
-                    return;
-                }
+נשמח מאוד לראותכם חוגגים איתנו ביום המיוחד שלנו! 🎉
+לאישור הגעה בלחיצה אחת:
+${SITE_URL}`
+        );
+    }
 
-                guests.forEach(guest => {
-                    if (guest.status === 'מגיע/ה') {
-                        totalAttending++;
-                        totalGuestsCount += (guest.guest_count || 1);
-                    } else {
-                        totalDeclined++;
-                    }
+    // שליחה למספר שהקלדת
+    function sendSingleWhatsApp() {
+        const rawPhone = document.getElementById('singlePhone').value;
+        const cleanPhone = rawPhone.replace(/[^0-9]/g, '').replace(/^0/, '');
 
-                    // התאמת טלפון לקישור WhatsApp בינלאומי
-                    let rawPhone = guest.phone.replace(/[^0-9]/g, '');
-                    if (rawPhone.startsWith('0')) {
-                        rawPhone = '972' + rawPhone.slice(1);
-                    }
-
-                    // הודעה מותאמת אישית לוואטסאפ
-                    const message = encodeURIComponent(`היי ${guest.full_name}, תודה רבה שאישרת הגעה לחתונה שלנו! נתראה בשמחות ❤️`);
-                    const waUrl = `https://wa.me/${rawPhone}?text=${message}`;
-
-                    const tr = document.createElement('tr');
-                    tr.className = 'hover:bg-gray-50 transition';
-                    tr.innerHTML = `
-                        <td class="p-3 font-semibold text-gray-800">${guest.full_name}</td>
-                        <td class="p-3 text-gray-600" dir="ltr">${guest.phone}</td>
-                        <td class="p-3">
-                            <span class="px-2.5 py-1 rounded-full text-xs font-bold ${guest.status === 'מגיע/ה' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
-                                ${guest.status}
-                            </span>
-                        </td>
-                        <td class="p-3 text-gray-700 font-bold">${guest.status === 'מגיע/ה' ? guest.guest_count : 0}</td>
-                        <td class="p-3 text-center">
-                            <div class="flex items-center justify-center gap-2">
-                                <a href="${waUrl}" target="_blank" class="inline-flex items-center gap-1 bg-green-500 hover:bg-green-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow transition">
-                                    💬 WhatsApp
-                                </a>
-                                <button onclick="deleteGuest(${guest.id}, '${guest.full_name}')" class="inline-flex items-center gap-1 bg-red-500 hover:bg-red-600 text-white text-xs font-bold px-2.5 py-1.5 rounded-lg shadow transition">
-                                    🗑️ מחיקה
-                                </button>
-                            </div>
-                        </td>
-                    `;
-                    tableBody.appendChild(tr);
-                });
-
-                // עדכון המונים
-                document.getElementById('totalAttending').innerText = totalAttending;
-                document.getElementById('totalGuests').innerText = totalGuestsCount;
-                document.getElementById('totalDeclined').innerText = totalDeclined;
-
-            } catch (err) {
-                console.error('Error fetching guests:', err);
-                tableBody.innerHTML = '<tr><td colspan="5" class="text-center p-6 text-red-500">שגיאה שטעינת הנתונים, נסה לרענן.</td></tr>';
-            }
+        if (!cleanPhone || cleanPhone.length < 8) {
+            alert('אנא הזן מספר טלפון תקין.');
+            return;
         }
 
-        async function deleteGuest(id, name) {
-            if (!confirm(`האם אתה בטוח שברצונך למחוק את הרשומה של "${name}"?`)) {
+        const url = `https://wa.me/972${cleanPhone}?text=${getMsgText()}`;
+        window.open(url, '_blank');
+    }
+
+    // טעינת המוזמנים מ-Supabase
+    async function fetchGuests() {
+        try {
+            const { data, error } = await supabaseClient.from('rsvp').select('*').order('created_at', { ascending: false });
+            if (error) throw error;
+
+            let total = 0, approved = 0, declined = 0;
+            const tbody = document.getElementById('guestsTable');
+            
+            if (!data || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">אין אישורים במערכת עדיין.</td></tr>';
                 return;
             }
 
-            try {
-                const { error } = await _supabase
-                    .from('guests')
-                    .delete()
-                    .eq('id', id);
+            tbody.innerHTML = data.map(g => {
+                if (g.attending) {
+                    total += (parseInt(g.count) || 1);
+                    approved++;
+                } else {
+                    declined++;
+                }
 
-                if (error) throw error;
+                const clean = g.phone ? g.phone.replace(/[^0-9]/g, '').replace(/^0/, '') : '';
+                const waBtn = clean ? `<a href="https://wa.me/972${clean}?text=${getMsgText()}" target="_blank" class="btn" style="padding: 4px 8px; font-size: 0.8rem;">💬 WhatsApp</a>` : '-';
 
-                // טעינה מחדש של הרשימה לאחר המחיקה
-                loadGuests();
-            } catch (err) {
-                console.error('Error deleting guest:', err);
-                alert('אירעה שגיאה בעת מחיקת הרשומה. ודא שהרשאות ה-Delete מופעלות ב-Supabase.');
-            }
+                return `
+                    <tr>
+                        <td><strong>${g.name || '-'}</strong></td>
+                        <td>${g.phone || '-'}</td>
+                        <td>${g.count || 1}</td>
+                        <td>${g.attending ? '<span class="badge-yes">מגיע</span>' : '<span class="badge-no">לא מגיע</span>'}</td>
+                        <td>${g.notes || '-'}</td>
+                        <td>${waBtn}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            document.getElementById('totalGuests').innerText = total;
+            document.getElementById('approvedCount').innerText = approved;
+            document.getElementById('declinedCount').innerText = declined;
+
+        } catch (err) {
+            console.error('שגיאה בטעינת נתונים:', err);
+            document.getElementById('guestsTable').innerHTML = `<tr><td colspan="6" style="text-align:center; color:red;">שגיאה בחיבור ל-Supabase. בדוק את ה-URL וה-Key.</td></tr>`;
         }
+    }
 
-        // טעינה ראשונית של הנתונים בעת פתיחת הדף
-        loadGuests();
-    </script>
+    fetchGuests();
+</script>
+
 </body>
 </html>
