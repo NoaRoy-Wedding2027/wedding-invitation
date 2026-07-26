@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Roy & Noa - אישור הגעה</title>
+    <!-- ספריית Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- פונטים בגוגל -->
     <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600;700&family=Cinzel:wght@600;800&display=swap" rel="stylesheet">
     <style>
         * {
@@ -35,7 +37,7 @@
             overflow: hidden;
         }
 
-        /* תמונה רחבה בראש הכרטיס */
+        /* באנר תמונה */
         .header-banner {
             width: 100%;
             height: 200px;
@@ -96,7 +98,7 @@
             border: 1px solid rgba(212, 175, 55, 0.3);
             border-radius: 16px;
             padding: 15px 10px;
-            margin-bottom: 25px;
+            margin-bottom: 15px;
             box-shadow: inset 0 2px 6px rgba(0,0,0,0.02);
         }
 
@@ -135,6 +137,36 @@
             margin-top: 2px;
         }
 
+        /* כפתורי פעולה מהירה (Waze / יומן) */
+        .quick-actions {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+
+        .btn-action {
+            flex: 1;
+            padding: 10px 8px;
+            border-radius: 12px;
+            border: 1px solid rgba(212, 175, 55, 0.4);
+            background: #fdfbf7;
+            color: #b8952d;
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 0.88rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+        }
+
+        .btn-action:hover {
+            background: #fefcf0;
+            border-color: #d4af37;
+            transform: translateY(-1px);
+        }
+
         .form-group {
             margin-bottom: 20px;
             text-align: right;
@@ -169,7 +201,7 @@
             box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.12);
         }
 
-        /* עיצוב כפתורי הבחירה (Radio Buttons) */
+        /* כפתורי רדיו מעוצבים */
         .radio-options {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -229,10 +261,6 @@
             box-shadow: 0 8px 25px rgba(212, 175, 55, 0.4);
         }
 
-        .btn-submit:active {
-            transform: translateY(0);
-        }
-
         #countGroup {
             overflow: hidden;
             max-height: 100px;
@@ -246,12 +274,68 @@
             margin-bottom: 0;
             pointer-events: none;
         }
+
+        /* פופ-אפ מעוצב */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 15px;
+            backdrop-filter: blur(3px);
+        }
+
+        .modal-card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px 20px;
+            text-align: center;
+            max-width: 360px;
+            width: 100%;
+            border: 1px solid #d4af37;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+        }
+
+        .modal-icon {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .modal-card h3 {
+            color: #d4af37;
+            margin: 0 0 10px 0;
+            font-size: 1.5rem;
+            font-family: 'Cinzel', serif;
+        }
+
+        .modal-card p {
+            color: #555;
+            margin-bottom: 20px;
+            font-size: 1rem;
+            line-height: 1.4;
+        }
+
+        .btn-modal-close {
+            background: linear-gradient(135deg, #d4af37 0%, #b8952d 100%);
+            color: white;
+            border: none;
+            padding: 10px 28px;
+            border-radius: 10px;
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 1rem;
+        }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <!-- באנר תמונה רחב -->
     <div class="header-banner">
         <img src="https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=800&q=80" alt="Roy & Noa" id="coupleBanner">
     </div>
@@ -282,6 +366,16 @@
                     <div class="timer-label">שניות</div>
                 </div>
             </div>
+        </div>
+
+        <!-- כפתורי Waze ויומן -->
+        <div class="quick-actions">
+            <button type="button" class="btn-action" onclick="addToGoogleCalendar()">
+                📅 הוסף ליומן
+            </button>
+            <button type="button" class="btn-action" onclick="openWaze()">
+                🚗 ניווט ב-Waze
+            </button>
         </div>
 
         <!-- טופס אישור הגעה -->
@@ -329,81 +423,18 @@
     </div>
 </div>
 
-<script>
-    const SUPABASE_URL = 'https://hmafronrwuxjizfkhxju.supabase.co';
-    const SUPABASE_KEY = 'sb_publishable_lTp_YIawnPvil699Ikc_Sw_5KnnJZPp';
+<!-- פופ-אפ הודעה מעוצב -->
+<div class="modal-overlay" id="customModal">
+    <div class="modal-card">
+        <div class="modal-icon" id="modalIcon">🎉</div>
+        <h3 id="modalTitle">תודה רבה!</h3>
+        <p id="modalText">אישור ההגעה שלך התקבל בהצלחה.</p>
+        <button class="btn-modal-close" onclick="closeModal()">סגור</button>
+    </div>
+</div>
 
-    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-    // מנגנון הטיימר לתאריך 06/01/2027
-    const weddingDate = new Date('2027-01-06T19:30:00').getTime();
-
-    function updateCountdown() {
-        const now = new Date().getTime();
-        const distance = weddingDate - now;
-
-        if (distance < 0) {
-            const container = document.querySelector('.countdown-container');
-            if (container) {
-                container.innerHTML = '<div class="countdown-title">🎉 היום זה היום! 🎉</div>';
-            }
-            return;
-        }
-
-        const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-
-        document.getElementById('days').innerText = String(days).padStart(2, '0');
-        document.getElementById('hours').innerText = String(hours).padStart(2, '0');
-        document.getElementById('minutes').innerText = String(minutes).padStart(2, '0');
-        document.getElementById('seconds').innerText = String(seconds).padStart(2, '0');
-    }
-
-    updateCountdown();
-    setInterval(updateCountdown, 1000);
-
-    function toggleCountField(show) {
-        const countGroup = document.getElementById('countGroup');
-        if (show) {
-            countGroup.classList.remove('hidden');
-        } else {
-            countGroup.classList.add('hidden');
-        }
-    }
-
-    async function submitRSVP(event) {
-        event.preventDefault();
-        const btn = document.getElementById('submitBtn');
-        btn.disabled = true;
-        btn.innerText = 'שולח...';
-
-        const name = document.getElementById('name').value;
-        const phone = document.getElementById('phone').value;
-        const attendingStatus = document.querySelector('input[name="attending"]:checked').value;
-        const count = attendingStatus === 'yes' ? parseInt(document.getElementById('count').value) : 0;
-        const notes = document.getElementById('notes').value;
-
-        try {
-            const { data, error } = await supabaseClient
-                .from('rsvps')
-                .insert([{ name, phone, attending: attendingStatus, count, notes }]);
-
-            if (error) throw error;
-
-            alert('תודה רבה! אישור ההגעה התקבל בהצלחה.');
-            document.getElementById('rsvpForm').reset();
-            toggleCountField(true);
-        } catch (err) {
-            console.error('Error submitting RSVP:', err);
-            alert('אירעה שגיאה בשליחה, אנא נסה שוב.');
-        } finally {
-            btn.disabled = false;
-            btn.innerText = 'אישור הגעה';
-        }
-    }
-</script>
+<!-- טעינת ה-JavaScript מקובץ נפרד -->
+<script src="script.js"></script>
 
 </body>
 </html>
