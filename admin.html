@@ -130,24 +130,11 @@
         .badge-yes { background: #d4edda; color: #155724; padding: 4px 8px; border-radius: 6px; }
         .badge-no { background: #f8d7da; color: #721c24; padding: 4px 8px; border-radius: 6px; }
 
-        .mode-selector {
+        .turbo-controls {
             display: flex;
+            align-items: center;
             gap: 15px;
-            margin-bottom: 15px;
-        }
-
-        .mode-btn {
-            padding: 8px 16px;
-            border: 1px solid #2c3e50;
-            border-radius: 20px;
-            background: white;
-            cursor: pointer;
-            font-weight: 600;
-        }
-
-        .mode-btn.active {
-            background: #2c3e50;
-            color: white;
+            margin-top: 10px;
         }
     </style>
 </head>
@@ -176,12 +163,12 @@
     <div class="card">
         <h3>🚀 שליחה מהירה ברצף (מצב טורבו)</h3>
         <p style="font-size: 0.9rem; color: #666;">
-            הדבק רשימת מספרי טלפון (בשורות נפרדות או מופרדים בפסיקים). המערכת תפתח לך חלון WhatsApp אחד אחרי השני בלחיצה אחת:
+            הדבק רשימת מספרי טלפון (בשורות נפרדות או מופרדים בפסיקים):
         </p>
         <textarea id="bulkPhones" rows="4" placeholder="0501234567&#10;0529876543&#10;0541112233"></textarea>
         
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
-            <button class="btn btn-turbo" onclick="startTurboMode()">⚡ התחל שליחה ברצף</button>
+        <div class="turbo-controls">
+            <button class="btn btn-turbo" id="turboBtn" onclick="handleTurboClick()">⚡ התחל שליחה ברצף</button>
             <span id="turboStatus" style="font-weight: bold; color: #8e44ad;"></span>
         </div>
     </div>
@@ -191,8 +178,8 @@
         <h3>📲 שליחת הזמנה/תזכורת למספר בודד</h3>
         <input type="tel" id="singlePhone" placeholder="הכנס מספר טלפון...">
         <div style="display: flex; gap: 10px;">
-            <button class="btn" onclick="sendSingleWhatsApp('invite')">שלא הזמנה</button>
-            <button class="btn" style="background: #3498db;" onclick="sendSingleWhatsApp('reminder')">שלא תזכורת</button>
+            <button class="btn" onclick="sendSingleWhatsApp('invite')">שלח הזמנה</button>
+            <button class="btn" style="background: #3498db;" onclick="sendSingleWhatsApp('reminder')">שלח תזכורת</button>
         </div>
     </div>
 
@@ -223,7 +210,7 @@
 
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // טקסט הזמנה רגילה
+    // טקסט הזמנה נקי ללא תווים מיוחדים
     function getInviteMsgText() {
         const text = `שלום!
 בשמחה ובהתרגשות אנו מזמינים אותך לחגוג איתנו את יום חתונתנו.
@@ -237,16 +224,17 @@ ${SITE_URL}
         return encodeURIComponent(text);
     }
 
-    // טקסט תזכורת
+    // טקסט תזכורת נקי ללא תווים מיוחדים
     function getReminderMsgText() {
-        const text = `היי! 
-תזכורת קטנה וחמה לגבי החתונה של נועה ורועי 🎉
-נשמח מאוד לדעת אם תוכלי/תוכל להגיע ולחגוג איתנו!
+        const text = `שלום!
+תזכורת קטנה לגבי החתונה של נועה ורועי.
+נשמח מאוד לדעת אם תוכלי או תוכל להגיע ולחגוג איתנו.
 
-לאישור הגעה מהיר בלחיצה אחת:
+לאישור הגעה בלחיצה אחת:
 ${SITE_URL}
 
 מחכים לראותך!
+באהבה,
 נועה ורועי`;
         return encodeURIComponent(text);
     }
@@ -265,48 +253,53 @@ ${SITE_URL}
         window.open(`https://wa.me/972${cleanPhone}?text=${msg}`, '_blank');
     }
 
-    // --- לוגיקת מצב טורבו לשליחה ברצף ---
+    // --- מנגנון שליחה ברצף (טורבו) משופר ---
     let turboList = [];
     let turboIndex = 0;
 
-    function startTurboMode() {
-        const rawText = document.getElementById('bulkPhones').value;
-        const lines = rawText.split(/[\n,]+/);
-        
-        turboList = lines
-            .map(p => p.replace(/[^0-9]/g, '').replace(/^0/, ''))
-            .filter(p => p.length >= 8);
+    function handleTurboClick() {
+        const btn = document.getElementById('turboBtn');
 
-        if (turboList.length === 0) {
-            alert('אנא הכנס רשימת מספרי טלפון תקינים.');
-            return;
+        // אם עדיין לא התחלנו את הסבב
+        if (turboList.length === 0 || turboIndex >= turboList.length) {
+            const rawText = document.getElementById('bulkPhones').value;
+            const lines = rawText.split(/[\n,]+/);
+            
+            turboList = lines
+                .map(p => p.replace(/[^0-9]/g, '').replace(/^0/, ''))
+                .filter(p => p.length >= 8);
+
+            if (turboList.length === 0) {
+                alert('אנא הכנס רשימת מספרי טלפון תקינים.');
+                return;
+            }
+
+            turboIndex = 0;
         }
 
-        turboIndex = 0;
-        sendNextTurbo();
-    }
-
-    function sendNextTurbo() {
-        if (turboIndex >= turboList.length) {
-            document.getElementById('turboStatus').innerText = '🎉 הסתיימה השליחה לכל הרשימה!';
-            alert('סיימת לשלוח לכל הרשימה!');
-            return;
-        }
-
-        const phone = turboList[turboIndex];
+        // שליחה למספר הנוכחי
+        const currentPhone = turboList[turboIndex];
         turboIndex++;
 
-        document.getElementById('turboStatus').innerText = `שולח ${turboIndex} מתוך ${turboList.length}...`;
+        // עדכון סטטוס והערה על הכפתור
+        document.getElementById('turboStatus').innerText = `נשלח ${turboIndex} מתוך ${turboList.length}`;
         
-        // פותח חלון וואטסאפ
-        window.open(`https://wa.me/972${phone}?text=${getInviteMsgText()}`, '_blank');
+        if (turboIndex < turboList.length) {
+            btn.innerText = `👉 שלח למספר הבא (${turboIndex + 1}/${turboList.length})`;
+        } else {
+            btn.innerText = '⚡ התחל שליחה מחדש';
+        }
 
-        // מציע לעבור לבא בתור
-        setTimeout(() => {
-            if (confirm(`הודעה ${turboIndex} נפתחה. לעבור למספר הבא בתור?`)) {
-                sendNextTurbo();
-            }
-        }, 500);
+        // פתיחת וואטסאפ
+        window.open(`https://wa.me/972${currentPhone}?text=${getInviteMsgText()}`, '_blank');
+
+        if (turboIndex >= turboList.length) {
+            setTimeout(() => {
+                alert('סיימת לשלוח לכל הרשימה!');
+                turboList = [];
+                document.getElementById('turboStatus').innerText = 'הסתיימה השליחה!';
+            }, 300);
+        }
     }
 
     // מחיקת אורח
@@ -350,7 +343,7 @@ ${SITE_URL}
                 const clean = g.phone ? g.phone.replace(/[^0-9]/g, '').replace(/^0/, '') : '';
                 const inviteBtn = clean ? `<a href="https://wa.me/972${clean}?text=${getInviteMsgText()}" target="_blank" class="btn" style="padding: 4px 8px; font-size: 0.8rem;">הזמנה</a>` : '';
                 const reminderBtn = clean ? `<a href="https://wa.me/972${clean}?text=${getReminderMsgText()}" target="_blank" class="btn" style="padding: 4px 8px; font-size: 0.8rem; background: #3498db;">תזכורת</a>` : '';
-                const deleteBtn = `<button class="btn-delete" onclick="deleteGuest(${g.id}, '${(g.name || '').replace(/'/g, "\\'")}')">🗑️</button>`;
+                const deleteBtn = `<button class="btn-delete" onclick="deleteGuest(${g.id}, '${(g.name || '').replace(/'/g, "\\'")}')">מחיקה</button>`;
 
                 return `
                     <tr>
