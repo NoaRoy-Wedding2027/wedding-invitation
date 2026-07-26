@@ -1,11 +1,9 @@
 // ==========================================
 // 1. הגדרות Supabase
-// (ודא שהמפתחות כאן תואמים לפרויקט ה-Supabase שלך!)
 // ==========================================
 const SUPABASE_URL = 'https://hmafronrwuxjizfkhxju.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_lTp_YIawnPvil699Ikc_Sw_5KnnJZPp';
 
-// יצירת חיבור בטוח
 let supabaseClient = null;
 if (typeof supabase !== 'undefined') {
     supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -70,7 +68,7 @@ async function submitRSVP(event) {
     event.preventDefault();
     
     if (!supabaseClient) {
-        showModal('שגיאה', 'מערכת החיבור לנתונים אינה זמינה כרגע. אנא רענן את הדף ונסה שוב.', '⚠️');
+        showModal('שגיאה', 'מערכת החיבור לנתונים אינה זמינה כרגע.', '⚠️');
         return;
     }
 
@@ -80,34 +78,59 @@ async function submitRSVP(event) {
 
     const name = document.getElementById('name').value;
     const phone = document.getElementById('phone').value;
-    const attendingStatus = document.querySelector('input[name="attending"]:checked').value;
-    const count = attendingStatus === 'yes' ? parseInt(document.getElementById('count').value) : 0;
+    
+    // קריאת הערך מהרדיו בוטון שנבחר
+    const selectedRadio = document.querySelector('input[name="attending"]:checked');
+    const rawStatus = selectedRadio ? selectedRadio.value : '';
+
+    // נרמול הסטטוס לקבלת ערך אחיד
+    let attendingStatus = rawStatus;
+    if (rawStatus.includes('אעדכן') || rawStatus === 'maybe') {
+        attendingStatus = 'maybe';
+    } else if (rawStatus === 'yes' || (rawStatus.includes('מגיע') && !rawStatus.includes('לא'))) {
+        attendingStatus = 'yes';
+    } else if (rawStatus === 'no' || rawStatus.includes('לא')) {
+        attendingStatus = 'no';
+    }
+
+    // קביעת כמות המוזמנים: רק אם מגיע לוקחים את הכמות, אחרת שולחים 0 מפורש
+    let guestCount = 0;
+    if (attendingStatus === 'yes') {
+        const rawCount = document.getElementById('count').value;
+        guestCount = parseInt(rawCount, 10) || 1;
+    }
+
     const notes = document.getElementById('notes').value;
 
     try {
         const { data, error } = await supabaseClient
             .from('rsvp')
-            .insert([{ name, phone, attending: attendingStatus, count, notes }]);
+            .insert([{ 
+                name: name, 
+                phone: phone, 
+                attending: attendingStatus, 
+                count: guestCount, 
+                notes: notes 
+            }]);
 
         if (error) {
-            console.error('Supabase error details:', error);
+            console.error('Supabase error:', error);
             throw error;
         }
 
-        // הודעות מותאמות אישית
         if (attendingStatus === 'yes') {
-            showModal('🎉 איזה כיף!', 'תודה רבה! אישור ההגעה שלך התקבל בהצלחה. מחכים כבר לחגוג איתך!', '🥂');
+            showModal('🎉 איזה כיף!', 'תודה רבה! אישור ההגעה שלך התקבל בהצלחה.', '🥂');
         } else if (attendingStatus === 'maybe') {
-            showModal('👍 הכל בסדר!', 'העדכון שלך התקבל. נשמח מאוד אם תצליח/י להגיע ומחכים לעדכון נוסף!', '📅');
+            showModal('👍 הכל בסדר!', 'העדכון שלך התקבל. נשמח מאוד אם תצליח/י להגיע!', '📅');
         } else {
-            showModal('תודה על העדכון', 'הודעתך התקבלה. נתגעגע אליך, אבל תודה רבה שעדכנת אותנו!', '❤️');
+            showModal('תודה על העדכון', 'הודעתך התקבלה. נתגעגע אליך, אבל תודה שעדכנת!', '❤️');
         }
 
         document.getElementById('rsvpForm').reset();
         toggleCountField(true);
     } catch (err) {
         console.error('Error submitting RSVP:', err);
-        showModal('אופס...', 'אירעה שגיאה בשליחת הטופס. נסה שוב או צור איתנו קשר ישירות.', '⚠️');
+        showModal('אופס...', 'אירעה שגיאה בשליחת הטופס. נסה שוב או צור איתנו קשר.', '⚠️');
     } finally {
         btn.disabled = false;
         btn.innerText = 'אישור הגעה';
@@ -137,16 +160,13 @@ function closeModal() {
 }
 
 // ==========================================
-// 6. ניווט ב-Waze (Coya חולון)
+// 6. ניווט ב-Waze ו-Google Calendar
 // ==========================================
 function openWaze() {
     const location = encodeURIComponent("Coya חולון");
     window.open(`https://waze.com/ul?q=${location}&navigate=yes`, '_blank');
 }
 
-// ==========================================
-// 7. הוספה ל-Google Calendar (Coya חולון)
-// ==========================================
 function addToGoogleCalendar() {
     const title = encodeURIComponent("החתונה של רועי ונועה 🎉");
     const details = encodeURIComponent("נשמח מאוד לחגוג ולראותכם בין אורחינו!");
