@@ -79,21 +79,20 @@ async function submitRSVP(event) {
     const name = document.getElementById('name').value;
     const phone = document.getElementById('phone').value;
     
-    // קריאת הערך מהרדיו בוטון שנבחר
     const selectedRadio = document.querySelector('input[name="attending"]:checked');
     const rawStatus = selectedRadio ? selectedRadio.value : '';
 
-    // נרמול הסטטוס לקבלת ערך אחיד
-    let attendingStatus = rawStatus;
-    if (rawStatus.includes('אעדכן') || rawStatus === 'maybe') {
-        attendingStatus = 'maybe';
-    } else if (rawStatus === 'yes' || (rawStatus.includes('מגיע') && !rawStatus.includes('לא'))) {
+    // זיהוי הסטטוס שנבחר
+    let attendingStatus = 'maybe';
+    if (rawStatus === 'yes' || (rawStatus.includes('מגיע') && !rawStatus.includes('לא'))) {
         attendingStatus = 'yes';
     } else if (rawStatus === 'no' || rawStatus.includes('לא')) {
         attendingStatus = 'no';
+    } else {
+        attendingStatus = 'maybe';
     }
 
-    // קביעת כמות המוזמנים: רק אם מגיע לוקחים את הכמות, אחרת שולחים 0 מפורש
+    // חישוב כמות אורחים
     let guestCount = 0;
     if (attendingStatus === 'yes') {
         const rawCount = document.getElementById('count').value;
@@ -108,7 +107,7 @@ async function submitRSVP(event) {
             .insert([{ 
                 name: name, 
                 phone: phone, 
-                attending: attendingStatus, 
+                attending: attendingStatus, // שולח 'yes', 'no', או 'maybe'
                 count: guestCount, 
                 notes: notes 
             }]);
@@ -130,7 +129,8 @@ async function submitRSVP(event) {
         toggleCountField(true);
     } catch (err) {
         console.error('Error submitting RSVP:', err);
-        showModal('אופס...', 'אירעה שגיאה בשליחת הטופס. נסה שוב או צור איתנו קשר.', '⚠️');
+        const errorDetails = err.message || JSON.stringify(err);
+        showModal('שגיאה מ-Supabase', errorDetails, '⚠️');
     } finally {
         btn.disabled = false;
         btn.innerText = 'אישור הגעה';
