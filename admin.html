@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ניהול אישורי הגעה - Roy & Noa</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Assistant', sans-serif;
+            background-color: #f4f6f9;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            margin-bottom: 25px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-box {
+            background: #fff;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            border-top: 4px solid #d4af37;
+        }
+
+        .stat-num {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        input[type="tel"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-family: inherit;
+            margin-bottom: 10px;
+            font-size: 1rem;
+        }
+
+        .btn {
+            background: #25D366;
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.95rem;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+
+        th, td {
+            padding: 12px 15px;
+            text-align: right;
+            border-bottom: 1px solid #eee;
+        }
+
+        th {
+            background: #2c3e50;
+            color: white;
+        }
+
+        .badge-yes { background: #d4edda; color: #155724; padding: 4px 8px; border-radius: 6px; }
+        .badge-no { background: #f8d7da; color: #721c24; padding: 4px 8px; border-radius: 6px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>👑 לוח ניהול - Roy & Noa Wedding</h1>
+
+    <!-- סטטיסטיקות -->
+    <div class="stats-grid">
+        <div class="stat-box">
+            <div>סה"כ אורחים מגיעים</div>
+            <div class="stat-num" id="totalGuests">0</div>
+        </div>
+        <div class="stat-box">
+            <div>אישרו הגעה</div>
+            <div class="stat-num" id="approvedCount">0</div>
+        </div>
+        <div class="stat-box">
+            <div>סירבו</div>
+            <div class="stat-num" id="declinedCount">0</div>
+        </div>
+    </div>
+
+    <!-- כלי שליחת הוואטסאפ -->
+    <div class="card">
+        <h3>📲 שליחת הזמנה בוואטסאפ למספר טלפון</h3>
+        <p style="font-size: 0.9rem; color: #666;">הכנס מספר טלפון (למשל: 0501234567):</p>
+        <input type="tel" id="singlePhone" placeholder="הכנס מספר טלפון כאן...">
+        <button class="btn" onclick="sendSingleWhatsApp()">פתח WhatsApp ושְלַח</button>
+    </div>
+
+    <!-- טבלת נרשמים -->
+    <h3>רשימת אישורים שהתקבלו מהאתר</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>שם</th>
+                <th>טלפון</th>
+                <th>כמות</th>
+                <th>סטטוס</th>
+                <th>הערות</th>
+                <th>פעולה</th>
+            </tr>
+        </thead>
+        <tbody id="guestsTable">
+            <tr><td colspan="6" style="text-align:center;">טוען נתונים...</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<script>
+    const SITE_URL = 'https://roynoa-wedding2027.github.io/wedding-invitation/';
+
+    const SUPABASE_URL = 'https://hmafronrwuxjizfkhxju.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_lTp_YIawnPvil699Ikc_Sw_5KnnJZPp';
+
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // הטקסט המעוצב של ההודעה שנשלחת בוואטסאפ
+    function getMsgText() {
+        return encodeURIComponent(
+`✨ *Roy & Noa מתחתנים!* ✨
+
+נשמח מאוד לראותכם חוגגים איתנו ביום המיוחד שלנו! 🎉
+לאישור הגעה בלחיצה אחת:
+${SITE_URL}`
+        );
+    }
+
+    // שליחה למספר שהקלדת
+    function sendSingleWhatsApp() {
+        const rawPhone = document.getElementById('singlePhone').value;
+        const cleanPhone = rawPhone.replace(/[^0-9]/g, '').replace(/^0/, '');
+
+        if (!cleanPhone || cleanPhone.length < 8) {
+            alert('אנא הזן מספר טלפון תקין.');
+            return;
+        }
+
+        const url = `https://wa.me/972${cleanPhone}?text=${getMsgText()}`;
+        window.open(url, '_blank');
+    }
+
+    // טעינת המוזמנים מ-Supabase
+    async function fetchGuests() {
+        try {
+            const { data, error } = await supabaseClient.from('rsvp').select('*').order('created_at', { ascending: false });
+            if (error) throw error;
+
+            let total = 0, approved = 0, declined = 0;
+            const tbody = document.getElementById('guestsTable');
+            
+            if (!data || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">אין אישורים במערכת עדיין.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = data.map(g => {
+                if (g.attending) {
+                    total += (parseInt(g.count) || 1);
+                    approved++;
+                } else {
+                    declined++;
+                }
+
+                const clean = g.phone ? g.phone.replace(/[^0-9]/g, '').replace(/^0/, '') : '';
+                const waBtn = clean ? `<a href="https://wa.me/972${clean}?text=${getMsgText()}" target="_blank" class="btn" style="padding: 4px 8px; font-size: 0.8rem;">💬 WhatsApp</a>` : '-';
+
+                return `
+                    <tr>
+                        <td><strong>${g.name || '-'}</strong></td>
+                        <td>${g.phone || '-'}</td>
+                        <td>${g.count || 1}</td>
+                        <td>${g.attending ? '<span class="badge-yes">מגיע</span>' : '<span class="badge-no">לא מגיע</span>'}</td>
+                        <td>${g.notes || '-'}</td>
+                        <td>${waBtn}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            document.getElementById('totalGuests').innerText = total;
+            document.getElementById('approvedCount').innerText = approved;
+            document.getElementById('declinedCount').innerText = declined;
+
+        } catch (err) {
+            console.error('שגיאה בטעינת נתונים:', err);
+            document.getElementById('guestsTable').innerHTML = `<tr><td colspan="6" style="text-align:center; color:red;">שגיאה בחיבור ל-Supabase. בדוק את ה-URL וה-Key.</td></tr>`;
+        }
+    }
+
+    fetchGuests();
+</script>
+
+</body>
+</html>
